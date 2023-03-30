@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bubble Popping Game</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+        canvas {
+            display: block;
+        }
+        .counter {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-family: Arial, sans-serif;
+            font-size: 24px;
+            color: #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div class="counter" id="counter">Bubbles Popped: 0</div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const counter = document.getElementById('counter');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let bubblesPopped = 0;
+
+        class Bubble {
+            constructor(x, y, radius, color, dx, dy) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.color = color;
+                this.dx = dx;
+                this.dy = dy;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            update() {
+                this.x += this.dx;
+                this.y += this.dy;
+
+                if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) {
+                    this.dx = -this.dx;
+                }
+                if (this.y - this.radius < 0 || this.y + this.radius > canvas.height) {
+                    this.dy = -this.dy;
+                }
+
+                this.draw();
+            }
+        }
+
+        const bubbles = [];
+
+        canvas.addEventListener('click', event => {
+            const x = event.clientX;
+            const y = event.clientY;
+
+            bubbles.forEach((bubble, index) => {
+                const distance = Math.hypot(bubble.x - x, bubble.y - y);
+
+                if (distance - bubble.radius < 0) {
+                    bubbles.splice(index, 1);
+                    bubblesPopped++;
+                    counter.textContent = `Bubbles Popped: ${bubblesPopped}`;
+
+                    if (bubblesPopped === 20) {
+                        alert('Game Complete!');
+                    }
+                }
+            });
+        });
+
+        function createBubble() {
+            const x = Math.random() * canvas.width;
+            const y = Math.random() * canvas.height;
+            const radius = Math.random() * 50 + 10;
+            const color = `hsla(${Math.random() * 360}, 50%, 50%, 0.5)`;
+            const dx = Math.random() * 2 - 1;
+            const dy = Math.random() * 2 - 1;
+
+            bubbles.push(new Bubble(x, y, radius, color, dx, dy));
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            bubbles.forEach(bubble => bubble.update());
+
+            if (bubbles.length < 20) {
+                createBubble();
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
