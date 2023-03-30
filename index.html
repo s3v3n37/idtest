@@ -27,6 +27,7 @@
 <body>
     <canvas id="gameCanvas"></canvas>
     <div class="counter" id="counter">Bubbles Popped: 0</div>
+    <audio id="backgroundMusic" src="your-music-file.mp3" type="audio/mpeg" loop autoplay></audio>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
@@ -36,8 +37,8 @@
         canvas.height = window.innerHeight;
 
         let bubblesPopped = 0;
-
-        class Bubble {
+        const webhelpColors = ['#004650', '#007380', '#2ed8c3', '#00bed2', '#cc3262', '#ffb1b8'];
+class Bubble {
             constructor(x, y, radius, color, dx, dy) {
                 this.x = x;
                 this.y = y;
@@ -66,55 +67,82 @@
                     this.dy = -this.dy;
                 }
 
+                for (let i = 0; i < bubbles.length; i++) {
+                    if (this === bubbles[i]) continue;
+
+                    const distance = Math.hypot(bubbles[i].x - this.x, bubbles[i].y - this.y);
+                    if (distance - this.radius - bubbles[i].radius < 1) {
+                        const angle = Math.atan2(bubbles[i].y - this.y, bubbles[i].x - this.x);
+                        const sin = Math.sin(angle);
+                        const cos = Math.cos(angle);
+
+                        const [x1, y1] = [0, 0];
+                        const [x2, y2] = [cos * (bubbles[i].x - this.x) + sin * (bubbles[i].y - this.y), cos * (bubbles[i].y - this.y) - sin * (bubbles[i].x - this.x)];
+                        const [vx1, vy1] = [cos * this.dx + sin * this.dy, cos * this.dy - sin * this.dx];
+                        const [vx2, vy2] = [cos * bubbles[i].dx + sin * bubbles[i].dy, cos * bubbles[i].dy - sin * bubbles[i].dx];
+                        const vx1Final = ((this.radius - bubbles[i].radius) * vx1 + 2 * bubbles[i].radius * vx2) / (this.radius + bubbles[i].radius);
+                        const vx2Final = ((bubbles[i].radius - this.radius) * vx2 + 2 * this.radius * vx1) / (this.radius + bubbles[i].radius);
+
+                        const [vx1FinalRotated, vy1FinalRotated] = [cos * vx1Final - sin * vy1, cos * vy1 + sin * vx1Final];
+                        const [vx2FinalRotated, vy2FinalRotated] = [cos * vx2Final - sin * vy2, cos * vy2 + sin * vx2Final];
+
+                        this.dx = vx1FinalRotated;
+                        this.dy = vy1FinalRotated;
+                        bubbles[i].dx = vx2FinalRotated;
+                        bubbles[i].dy = vy2FinalRotated;
+                    }
+                }
+
                 this.draw();
             }
         }
 
+        function createRandomBubble() {
+            const radius = Math.random() * 40 + 20;
+            const x = Math.random() * (canvas.width - 2 * radius) + radius;
+            const y = Math.random() * (canvas.height - 2 * radius) + radius;
+            const color = webhelpColors[Math.floor(Math.random() * webhelpColors.length)];
+            const dx = Math.random() * 2 - 1;
+            const dy = Math.random() * 2 - 1;
+
+            return new Bubble(x, y, radius, color, dx, dy);
+        }
+
         const bubbles = [];
+        for (let i = 0; i < 20; i++) {
+            bubbles.push(createRandomBubble());
+        }
+function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        canvas.addEventListener('click', event => {
-            const x = event.clientX;
-            const y = event.clientY;
+            for (let i = 0; i < bubbles.length; i++) {
+                bubbles[i].update();
+            }
 
-            bubbles.forEach((bubble, index) => {
-                const distance = Math.hypot(bubble.x - x, bubble.y - y);
+            if (bubblesPopped < 20) {
+                requestAnimationFrame(animate);
+            }
+        }
 
-                if (distance - bubble.radius < 0) {
-                    bubbles.splice(index, 1);
+        animate();
+
+        canvas.addEventListener('click', (event) => {
+            for (let i = 0; i < bubbles.length; i++) {
+                const distance = Math.hypot(event.clientX - bubbles[i].x, event.clientY - bubbles[i].y);
+
+                if (distance <= bubbles[i].radius) {
+                    bubbles.splice(i, 1);
                     bubblesPopped++;
                     counter.textContent = `Bubbles Popped: ${bubblesPopped}`;
 
                     if (bubblesPopped === 20) {
-                        alert('Game Complete!');
+                        alert('Congratulations! You have completed the game!');
                     }
+                    break;
                 }
-            });
-        });
-
-        function createBubble() {
-            const x = Math.random() * canvas.width;
-            const y = Math.random() * canvas.height;
-            const radius = Math.random() * 50 + 10;
-            const color = `hsla(${Math.random() * 360}, 50%, 50%, 0.5)`;
-            const dx = Math.random() * 2 - 1;
-            const dy = Math.random() * 2 - 1;
-
-            bubbles.push(new Bubble(x, y, radius, color, dx, dy));
-        }
-
-        function animate() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            bubbles.forEach(bubble => bubble.update());
-
-            if (bubbles.length < 20) {
-                createBubble();
             }
-
-            requestAnimationFrame(animate);
-        }
-
-        animate();
+        });
     </script>
 </body>
 </html>
+
